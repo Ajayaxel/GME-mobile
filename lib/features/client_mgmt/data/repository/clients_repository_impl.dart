@@ -11,4 +11,14 @@ class ClientsRepositoryImpl implements ClientsRepository {
   Future<List<Client>> getClients() async {
     return await remoteDataSource.getClients();
   }
+
+  @override
+  Future<void> registerClient(Map<String, dynamic> clientData) async {
+    await remoteDataSource.registerClient(clientData);
+  }
+
+  @override
+  Future<void> deleteClient(String id) async {
+    await remoteDataSource.deleteClient(id);
+  }
 }

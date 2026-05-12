@@ -11,4 +11,14 @@ class AssayingRepositoryImpl implements AssayingRepository {
   Future<List<AssayingRecord>> getRecords() async {
     return await remoteDataSource.getRecords();
   }
+
+  @override
+  Future<void> createSample(Map<String, dynamic> data) async {
+    await remoteDataSource.createSample(data);
+  }
+
+  @override
+  Future<void> deleteSample(String id) async {
+    await remoteDataSource.deleteSample(id);
+  }
 }

@@ -25,3 +25,11 @@ class TransportationError extends TransportationState {
   @override
   List<Object?> get props => [message];
 }
+
+class TransportationActionSuccess extends TransportationState {
+  final String message;
+  TransportationActionSuccess({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}

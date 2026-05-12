@@ -11,7 +11,7 @@ import '../yard_intake/presentation/screens/material_types_screen.dart';
 import '../processing/presentation/screens/processing_screen.dart';
 import '../assaying/presentation/screens/assaying_screen.dart';
 import '../inspection/presentation/screens/inspection_screen.dart';
-import '../warehousing/presentation/screens/warehousing_screen.dart';
+import '../bagging/presentation/screens/bagging_screen.dart';
 import '../dispatch/presentation/screens/dispatch_screen.dart';
 import '../export/presentation/screens/export_screen.dart';
 import '../weighbridge/presentation/screens/weighbridge_screen.dart';
@@ -34,6 +34,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  int _refreshCount = 0;
 
   final List<Widget> _pages = [
     const DashboardScreen(),
@@ -44,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const ProcessingScreen(),
     const AssayingScreen(),
     const InspectionScreen(),
-    const WarehousingScreen(),
+    const BaggingScreen(),
     const DispatchScreen(),
     const ExportScreen(),
     const WeighbridgeScreen(),
@@ -108,6 +109,14 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                _refreshCount++;
+              });
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
@@ -136,7 +145,15 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: EdgeInsets.symmetric(
           horizontal: Responsive.isTablet(context) ? 60.0 : 0.0,
         ),
-        child: IndexedStack(index: _selectedIndex, children: _pages),
+        child: IndexedStack(
+          index: _selectedIndex, 
+          children: _pages.asMap().entries.map((entry) {
+            return KeyedSubtree(
+              key: ValueKey("page_${entry.key}_${_selectedIndex == entry.key ? _refreshCount : 0}"),
+              child: entry.value,
+            );
+          }).toList(),
+        ),
       ),
     );
   }

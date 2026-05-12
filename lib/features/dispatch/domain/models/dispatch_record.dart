@@ -11,6 +11,8 @@ class DispatchRecord extends Equatable {
   final String destination;
   final String dispatchDate;
   final String deliveryDate;
+  final String driverName;
+  final String contactNumber;
   final String status;
 
   const DispatchRecord({
@@ -24,6 +26,8 @@ class DispatchRecord extends Equatable {
     required this.destination,
     required this.dispatchDate,
     required this.deliveryDate,
+    required this.driverName,
+    required this.contactNumber,
     required this.status,
   });
 
@@ -39,6 +43,8 @@ class DispatchRecord extends Equatable {
       destination: json['destination'] ?? 'N/A',
       dispatchDate: json['dispatchDate'] ?? '',
       deliveryDate: json['deliveryDate'] ?? '-',
+      driverName: json['driverName'] ?? 'N/A',
+      contactNumber: json['contactNumber'] ?? 'N/A',
       status: json['status'] ?? 'Pending',
     );
   }

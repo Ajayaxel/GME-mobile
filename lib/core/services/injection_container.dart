@@ -57,6 +57,33 @@ import '../../features/yard_intake/data/repository/yard_intake_repository_impl.d
 import '../../features/yard_intake/domain/repository/yard_intake_repository.dart';
 import '../../features/yard_intake/presentation/bloc/yard_intake_bloc.dart';
 
+import '../../features/inspection/data/datasource/inspection_remote_datasource.dart';
+import '../../features/inspection/data/repository/inspection_repository_impl.dart';
+import '../../features/inspection/domain/repository/inspection_repository.dart';
+import '../../features/inspection/presentation/bloc/inspection_bloc.dart';
+
+import '../../features/bagging/data/datasource/bagging_remote_datasource.dart';
+import '../../features/bagging/data/repository/bagging_repository_impl.dart';
+import '../../features/bagging/domain/repository/bagging_repository.dart';
+import '../../features/bagging/presentation/bloc/bagging_bloc.dart';
+
+import '../../features/weighbridge/data/datasource/weighbridge_remote_datasource.dart';
+import '../../features/weighbridge/data/repository/weighbridge_repository_impl.dart';
+import '../../features/weighbridge/domain/repository/weighbridge_repository.dart';
+import '../../features/weighbridge/presentation/bloc/weighbridge_bloc.dart';
+import '../../features/traceability/data/datasource/traceability_remote_datasource.dart';
+import '../../features/traceability/data/repository/traceability_repository_impl.dart';
+import '../../features/traceability/domain/repository/traceability_repository.dart';
+import '../../features/traceability/presentation/bloc/traceability_bloc.dart';
+import '../../features/user_mgmt/data/datasource/users_remote_datasource.dart';
+import '../../features/user_mgmt/data/repository/users_repository_impl.dart';
+import '../../features/user_mgmt/domain/repository/users_repository.dart';
+import '../../features/user_mgmt/presentation/bloc/users_bloc.dart';
+import '../../features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import '../../features/dashboard/domain/repository/dashboard_repository.dart';
+import '../../features/dashboard/data/repository/dashboard_repository_impl.dart';
+import '../../features/dashboard/data/datasource/dashboard_remote_datasource.dart';
+
 import 'api_interceptor.dart';
 
 import '../constants/api_constants.dart';
@@ -77,6 +104,12 @@ Future<void> init() async {
   sl.registerFactory(() => FinancialsBloc(repository: sl()));
   sl.registerFactory(() => SettingsBloc(repository: sl()));
   sl.registerFactory(() => YardIntakeBloc(repository: sl()));
+  sl.registerFactory(() => InspectionBloc(repository: sl()));
+  sl.registerFactory(() => BaggingBloc(repository: sl()));
+  sl.registerFactory(() => WeighbridgeBloc(repository: sl()));
+  sl.registerFactory(() => TraceabilityBloc(repository: sl()));
+  sl.registerFactory(() => UsersBloc(repository: sl()));
+  sl.registerFactory(() => DashboardBloc(repository: sl()));
 
   // Use cases
   sl.registerLazySingleton(() => LoginUseCase(sl()));
@@ -130,6 +163,26 @@ Future<void> init() async {
     () => YardIntakeRepositoryImpl(remoteDataSource: sl(), networkInfo: sl()),
   );
 
+  sl.registerLazySingleton<InspectionRepository>(
+    () => InspectionRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  sl.registerLazySingleton<BaggingRepository>(
+    () => BaggingRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerLazySingleton<WeighbridgeRepository>(
+    () => WeighbridgeRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerLazySingleton<TraceabilityRepository>(
+    () => TraceabilityRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerLazySingleton<UsersRepository>(
+    () => UsersRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerLazySingleton<DashboardRepository>(
+    () => DashboardRepositoryImpl(remoteDataSource: sl()),
+  );
+
   // Data sources
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(dio: sl()),
@@ -165,6 +218,26 @@ Future<void> init() async {
 
   sl.registerLazySingleton<YardIntakeRemoteDataSource>(
     () => YardIntakeRemoteDataSourceImpl(dio: sl()),
+  );
+
+  sl.registerLazySingleton<InspectionRemoteDataSource>(
+    () => InspectionRemoteDataSourceImpl(dio: sl()),
+  );
+
+  sl.registerLazySingleton<BaggingRemoteDataSource>(
+    () => BaggingRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<WeighbridgeRemoteDataSource>(
+    () => WeighbridgeRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<TraceabilityRemoteDataSource>(
+    () => TraceabilityRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<UsersRemoteDataSource>(
+    () => UsersRemoteDataSourceImpl(dio: sl()),
+  );
+  sl.registerLazySingleton<DashboardRemoteDataSource>(
+    () => DashboardRemoteDataSourceImpl(dio: sl()),
   );
 
   // Core

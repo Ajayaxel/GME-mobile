@@ -11,4 +11,14 @@ class ProcessingRepositoryImpl implements ProcessingRepository {
   Future<List<ProcessingBatch>> getProcessingBatches() {
     return remoteDataSource.getProcessingBatches();
   }
+
+  @override
+  Future<void> createProcessingBatch(Map<String, dynamic> data) {
+    return remoteDataSource.createProcessingBatch(data);
+  }
+
+  @override
+  Future<void> deleteProcessingBatch(String id) {
+    return remoteDataSource.deleteProcessingBatch(id);
+  }
 }

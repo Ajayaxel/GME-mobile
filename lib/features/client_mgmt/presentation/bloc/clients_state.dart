@@ -25,3 +25,7 @@ class ClientsError extends ClientsState {
   @override
   List<Object?> get props => [message];
 }
+
+class ClientRegistered extends ClientsState {}
+
+class ClientDeleted extends ClientsState {}

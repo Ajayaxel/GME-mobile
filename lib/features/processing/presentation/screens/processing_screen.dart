@@ -7,6 +7,16 @@ import '../../domain/models/processing_batch.dart';
 import '../bloc/processing_bloc.dart';
 import '../bloc/processing_event.dart';
 import '../bloc/processing_state.dart';
+import '../../../yard_intake/presentation/bloc/yard_intake_bloc.dart';
+import '../../../yard_intake/presentation/bloc/yard_intake_event.dart';
+import '../../../yard_intake/presentation/bloc/yard_intake_state.dart';
+import '../../../client_mgmt/presentation/bloc/clients_bloc.dart';
+import '../../../client_mgmt/presentation/bloc/clients_event.dart';
+import '../../../client_mgmt/presentation/bloc/clients_state.dart';
+import '../../../settings/presentation/bloc/settings_bloc.dart';
+import '../../../settings/presentation/bloc/settings_event.dart';
+import '../../../settings/presentation/bloc/settings_state.dart';
+import '../../../../core/widgets/app_button.dart';
 
 class ProcessingScreen extends StatefulWidget {
   const ProcessingScreen({super.key});
@@ -20,69 +30,109 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<ProcessingBloc>()..add(FetchProcessingBatches()),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: BlocBuilder<ProcessingBloc, ProcessingState>(
-          builder: (context, state) {
-            if (state is ProcessingLoading) {
-              return const Center(child: CircularProgressIndicator(color: Colors.white70));
-            } else if (state is ProcessingLoaded) {
-              final filteredBatches = state.batches
-                  .where((b) => b.batchId.toLowerCase().contains(_searchQuery.toLowerCase()) || 
-                                b.supplierName.toLowerCase().contains(_searchQuery.toLowerCase()))
-                  .toList();
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => sl<ProcessingBloc>()..add(FetchProcessingBatches())),
+        BlocProvider(create: (context) => sl<YardIntakeBloc>()..add(FetchYardIntake())),
+        BlocProvider(create: (context) => sl<SettingsBloc>()..add(LoadSettings())),
+        BlocProvider(create: (context) => sl<ClientsBloc>()..add(FetchClients())),
+      ],
+      child: BlocListener<ProcessingBloc, ProcessingState>(
+        listener: (context, state) {
+          if (state is ProcessingActionSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message), backgroundColor: Colors.green),
+            );
+          } else if (state is ProcessingError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            );
+          }
+        },
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: BlocBuilder<ProcessingBloc, ProcessingState>(
+            builder: (context, state) {
+              if (state is ProcessingLoading || state is ProcessingActionLoading) {
+                return const Center(child: CircularProgressIndicator(color: Colors.white70));
+              } else if (state is ProcessingLoaded || state is ProcessingActionSuccess) {
+                final batches = (state is ProcessingLoaded) 
+                    ? state.batches 
+                    : (context.read<ProcessingBloc>().state as ProcessingLoaded).batches;
+                
+                final filteredBatches = batches
+                    .where((b) => b.batchId.toLowerCase().contains(_searchQuery.toLowerCase()) || 
+                                  b.supplierName.toLowerCase().contains(_searchQuery.toLowerCase()))
+                    .toList();
 
-              return Column(
-                children: [
-                  _buildHeader(state.batches),
-                  _buildSearchBar(),
-                  Expanded(
-                    child: _buildBatchList(context, filteredBatches),
-                  ),
-                ],
-              );
-            } else if (state is ProcessingError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                return Column(
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
-                    const SizedBox(height: 16),
-                    Text(state.message, style: const TextStyle(color: Colors.white70)),
-                    TextButton(
-                      onPressed: () => context.read<ProcessingBloc>().add(FetchProcessingBatches()),
-                      child: const Text("RETRY", style: TextStyle(color: Colors.white)),
+                    _buildHeader(context, batches),
+                    _buildSearchBar(),
+                    Expanded(
+                      child: _buildBatchList(context, filteredBatches),
                     ),
                   ],
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          },
+                );
+              } else if (state is ProcessingError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
+                      const SizedBox(height: 16),
+                      Text(state.message, style: const TextStyle(color: Colors.white70)),
+                      TextButton(
+                        onPressed: () => context.read<ProcessingBloc>().add(FetchProcessingBatches()),
+                        child: const Text("RETRY", style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(List<ProcessingBatch> batches) {
+  Widget _buildHeader(BuildContext context, List<ProcessingBatch> batches) {
     final pendingCount = batches.where((b) => b.status.toLowerCase() != 'completed').length;
     final completedCount = batches.length - pendingCount;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            SizedBox(width: 120, child: _buildStatItem("TOTAL", "${batches.length}", Colors.white, Icons.layers_outlined)),
-            const SizedBox(width: 12),
-            SizedBox(width: 120, child: _buildStatItem("PENDING", "$pendingCount", AppTheme.btnColor, Icons.pending_actions_outlined)),
-            const SizedBox(width: 12),
-            SizedBox(width: 120, child: _buildStatItem("COMPLETED", "$completedCount", Colors.greenAccent, Icons.check_circle_outline)),
-          ],
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  SizedBox(width: 120, child: _buildStatItem("TOTAL", "${batches.length}", Colors.white, Icons.layers_outlined)),
+                  const SizedBox(width: 12),
+                  SizedBox(width: 120, child: _buildStatItem("PENDING", "$pendingCount", AppTheme.btnColor, Icons.pending_actions_outlined)),
+                  const SizedBox(width: 12),
+                  SizedBox(width: 120, child: _buildStatItem("COMPLETED", "$completedCount", Colors.greenAccent, Icons.check_circle_outline)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton.icon(
+            onPressed: () => _showCreateBatchSheet(context),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text("Create Batch"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.btnColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -99,7 +149,7 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: color.withOpacity(0.7), size: 18),
-          const Spacer(),
+          const SizedBox(height: 12),
           Text(
             value,
             style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900),
@@ -157,7 +207,7 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
           crossAxisCount: isTablet ? 2 : 1,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          mainAxisExtent: isTablet ? 320 : 260,
+          mainAxisExtent: isTablet ? 320 : 300,
         ),
         itemBuilder: (context, index) {
           return ProcessingCard(batch: batches[index]);
@@ -232,9 +282,20 @@ class ProcessingCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text(
-                          "Status",
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                        Row(
+                          children: [
+                            const Text(
+                              "Status",
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                              onPressed: () => _showDeleteDialog(context),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 2),
                         _buildStatusChip(batch.status, statusColor),
@@ -380,4 +441,280 @@ class ProcessingCard extends StatelessWidget {
       ],
     );
   }
+
+  void _showDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (innerContext) => AlertDialog(
+        backgroundColor: AppTheme.bgColor,
+        title: const Text("Delete Batch", style: TextStyle(color: Colors.white)),
+        content: Text("Are you sure you want to delete batch ${batch.batchId}?", style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(innerContext),
+            child: const Text("Cancel", style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(innerContext);
+              context.read<ProcessingBloc>().add(DeleteProcessingBatch(batch.id));
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void _showCreateBatchSheet(BuildContext context) {
+  final processingBloc = context.read<ProcessingBloc>();
+  final yardIntakeBloc = context.read<YardIntakeBloc>();
+  final settingsBloc = context.read<SettingsBloc>();
+  final clientsBloc = context.read<ClientsBloc>();
+
+  final batchIdController = TextEditingController(text: "BATCH-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}");
+  final quantityController = TextEditingController();
+  
+  String? selectedGRN;
+  String? selectedMaterial;
+  String? selectedMachine;
+  String? selectedGrade;
+  String? selectedSupplier;
+  String? selectedCustomer;
+  DateTime selectedDate = DateTime.now();
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: AppTheme.bgColor,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+    builder: (innerContext) => MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: processingBloc),
+        BlocProvider.value(value: yardIntakeBloc),
+        BlocProvider.value(value: settingsBloc),
+        BlocProvider.value(value: clientsBloc),
+      ],
+      child: StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Create Processing Batch", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text("Start a new crushing and processing batch", style: TextStyle(color: Colors.white54, fontSize: 14)),
+                const SizedBox(height: 32),
+                
+                _buildFieldLabel("Batch ID (Auto-generated)"),
+                _buildSheetTextField(batchIdController, enabled: false),
+                
+                const SizedBox(height: 20),
+                _buildFieldLabel("Select GRN"),
+                BlocBuilder<YardIntakeBloc, YardIntakeState>(
+                  builder: (context, state) {
+                    final grns = (state is YardIntakeLoaded) ? state.intakeList : [];
+                    return _buildSheetDropdown(
+                      value: selectedGRN,
+                      hint: "Select GRN Reference",
+                      items: grns.map((e) => DropdownMenuItem<String>(value: e.grnNumber, child: Text(e.grnNumber, style: const TextStyle(color: Colors.white)))).toList(),
+                      onChanged: (val) => setModalState(() => selectedGRN = val),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 20),
+                _buildFieldLabel("Select Material"),
+                BlocBuilder<SettingsBloc, SettingsState>(
+                  builder: (context, state) {
+                    final materials = (state is SettingsLoaded) ? state.settings.materialTypes : [];
+                    return _buildSheetDropdown(
+                      value: selectedMaterial,
+                      hint: "Select raw material",
+                      items: materials.map((e) => DropdownMenuItem<String>(value: e, child: Text(e, style: const TextStyle(color: Colors.white)))).toList(),
+                      onChanged: (val) => setModalState(() => selectedMaterial = val),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 20),
+                _buildFieldLabel("Input Quantity (kg)"),
+                _buildSheetTextField(quantityController, hint: "0", keyboardType: TextInputType.number),
+
+                const SizedBox(height: 20),
+                _buildFieldLabel("Select Machine"),
+                BlocBuilder<SettingsBloc, SettingsState>(
+                  builder: (context, state) {
+                    final machines = (state is SettingsLoaded) ? state.settings.machines : [];
+                    return _buildSheetDropdown(
+                      value: selectedMachine,
+                      hint: "Select assigned machine",
+                      items: machines.map((e) => DropdownMenuItem<String>(value: e, child: Text(e, style: const TextStyle(color: Colors.white)))).toList(),
+                      onChanged: (val) => setModalState(() => selectedMachine = val),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 20),
+                _buildFieldLabel("Select Grade"),
+                _buildSheetDropdown(
+                  value: selectedGrade,
+                  hint: "Select output grade",
+                  items: ["High", "Medium", "Low", "Grade A", "Grade B"]
+                      .map((e) => DropdownMenuItem<String>(value: e, child: Text(e, style: const TextStyle(color: Colors.white)))).toList(),
+                  onChanged: (val) => setModalState(() => selectedGrade = val),
+                ),
+
+                const SizedBox(height: 20),
+                _buildFieldLabel("Select Supplier"),
+                BlocBuilder<ClientsBloc, ClientsState>(
+                  builder: (context, state) {
+                    final clients = (state is ClientsLoaded) ? state.clients : [];
+                    return _buildSheetDropdown(
+                      value: selectedSupplier,
+                      hint: "Select supplier name",
+                      items: clients.map((e) => DropdownMenuItem<String>(value: e.name, child: Text(e.name, style: const TextStyle(color: Colors.white)))).toList(),
+                      onChanged: (val) => setModalState(() => selectedSupplier = val),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 20),
+                _buildFieldLabel("Select Customer"),
+                BlocBuilder<ClientsBloc, ClientsState>(
+                  builder: (context, state) {
+                    final clients = (state is ClientsLoaded) ? state.clients : [];
+                    return _buildSheetDropdown(
+                      value: selectedCustomer,
+                      hint: "Select customer name",
+                      items: clients.map((e) => DropdownMenuItem<String>(value: e.name, child: Text(e.name, style: const TextStyle(color: Colors.white)))).toList(),
+                      onChanged: (val) => setModalState(() => selectedCustomer = val),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 20),
+                _buildFieldLabel("Processing Date"),
+                InkWell(
+                  onTap: () async {
+                    final DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2030),
+                      builder: (context, child) => Theme(
+                        data: ThemeData.dark().copyWith(
+                          colorScheme:  ColorScheme.dark(primary: AppTheme.btnColor, onPrimary: Colors.white, surface: AppTheme.bgColor, onSurface: Colors.white),
+                          dialogBackgroundColor: AppTheme.bgColor,
+                        ),
+                        child: child!,
+                      ),
+                    );
+                    if (picked != null && picked != selectedDate) {
+                      setModalState(() => selectedDate = picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, color: Colors.white54, size: 18),
+                        const SizedBox(width: 12),
+                        Text("${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", style: const TextStyle(color: Colors.white, fontSize: 16)),
+                        const Spacer(),
+                        const Icon(Icons.arrow_drop_down, color: Colors.white54),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("Cancel", style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: AppButton(
+                        text: "Create Batch",
+                        onPressed: () {
+                          if (selectedMaterial == null || quantityController.text.isEmpty || selectedMachine == null || selectedGrade == null || selectedSupplier == null || selectedCustomer == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all required fields")));
+                            return;
+                          }
+                          
+                          processingBloc.add(CreateProcessingBatch({
+                            'batchId': batchIdController.text,
+                            'rawMaterial': [selectedMaterial],
+                            'inputQuantity': double.tryParse(quantityController.text) ?? 0,
+                            'machineAssigned': selectedMachine,
+                            'outputGrade': selectedGrade,
+                            'grnReference': selectedGRN ?? 'N/A',
+                            'supplierName': selectedSupplier,
+                            'customerName': selectedCustomer,
+                            'processingDate': selectedDate.toIso8601String(),
+                            'status': 'Processing'
+                          }));
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildFieldLabel(String label) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 8.0),
+    child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+  );
+}
+
+Widget _buildSheetTextField(TextEditingController controller, {String? hint, bool enabled = true, TextInputType? keyboardType}) {
+  return TextField(
+    controller: controller,
+    enabled: enabled,
+    keyboardType: keyboardType,
+    style: const TextStyle(color: Colors.white),
+    decoration: InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.white24),
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.05),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+    ),
+  );
+}
+
+Widget _buildSheetDropdown({required String? value, required String hint, required List<DropdownMenuItem<String>> items, required Function(String?) onChanged}) {
+  return DropdownButtonFormField<String>(
+    value: value,
+    dropdownColor: AppTheme.bgColor,
+    icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+    decoration: InputDecoration(
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.05),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+    ),
+    hint: Text(hint, style: const TextStyle(color: Colors.white24, fontSize: 14)),
+    items: items,
+    onChanged: onChanged,
+  );
 }

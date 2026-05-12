@@ -11,4 +11,9 @@ class FinancialsRepositoryImpl implements FinancialsRepository {
   Future<List<Invoice>> getInvoices() async {
     return await remoteDataSource.getInvoices();
   }
+
+  @override
+  Future<void> createInvoice(Map<String, dynamic> data) async {
+    return await remoteDataSource.createInvoice(data);
+  }
 }

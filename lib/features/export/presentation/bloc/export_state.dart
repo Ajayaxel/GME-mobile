@@ -25,3 +25,11 @@ class ExportError extends ExportState {
   @override
   List<Object?> get props => [message];
 }
+
+class ExportActionSuccess extends ExportState {
+  final String message;
+  ExportActionSuccess({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}

@@ -24,67 +24,97 @@ class _ClientMgmtScreenState extends State<ClientMgmtScreen> {
       create: (context) => sl<ClientsBloc>()..add(FetchClients()),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: BlocBuilder<ClientsBloc, ClientsState>(
-          builder: (context, state) {
-            if (state is ClientsLoading) {
-              return const Center(
-                child: CircularProgressIndicator(color: Colors.white70),
+        body: BlocListener<ClientsBloc, ClientsState>(
+          listener: (context, state) {
+            if (state is ClientRegistered) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Client registered successfully"),
+                  backgroundColor: Colors.green,
+                ),
               );
-            } else if (state is ClientsLoaded) {
-              final filteredClients = state.clients
-                  .where(
-                    (c) =>
-                        c.name.toLowerCase().contains(
-                          _searchQuery.toLowerCase(),
-                        ) ||
-                        c.industry.toLowerCase().contains(
-                          _searchQuery.toLowerCase(),
-                        ),
-                  )
-                  .toList();
-
-              return Column(
-                children: [
-                  _buildHeader(state.clients),
-                  _buildSearchBar(),
-                  Expanded(child: _buildClientList(context, filteredClients)),
-                ],
+            } else if (state is ClientDeleted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Client deleted successfully"),
+                  backgroundColor: Colors.orange,
+                ),
               );
             } else if (state is ClientsError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.redAccent,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      state.message,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          context.read<ClientsBloc>().add(FetchClients()),
-                      child: const Text(
-                        "RETRY",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ],
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.redAccent,
                 ),
               );
             }
-            return const SizedBox.shrink();
           },
+          child: BlocBuilder<ClientsBloc, ClientsState>(
+            builder: (context, state) {
+              if (state is ClientsLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.white70),
+                );
+              } else if (state is ClientsLoaded || state is ClientRegistered) {
+                final List<Client> clients = (state is ClientsLoaded)
+                    ? state.clients
+                    : (state as dynamic).clients ?? [];
+
+                final filteredClients = clients
+                    .where(
+                      (c) =>
+                          c.name.toLowerCase().contains(
+                            _searchQuery.toLowerCase(),
+                          ) ||
+                          c.industry.toLowerCase().contains(
+                            _searchQuery.toLowerCase(),
+                          ),
+                    )
+                    .toList();
+
+                return Column(
+                  children: [
+                    _buildHeader(context, clients),
+                    _buildSearchBar(),
+                    Expanded(child: _buildClientList(context, filteredClients)),
+                  ],
+                );
+              } else if (state is ClientsError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.redAccent,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        state.message,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            context.read<ClientsBloc>().add(FetchClients()),
+                        child: const Text(
+                          "RETRY",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(List<Client> clients) {
+  Widget _buildHeader(BuildContext context, List<Client> clients) {
     final now = DateTime.now();
     final newThisMonth = clients
         .where(
@@ -118,10 +148,7 @@ class _ClientMgmtScreenState extends State<ClientMgmtScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            SizedBox(
-              width: 130,
-              child: _buildRegisterButton(),
-            ),
+            SizedBox(width: 130, child: _buildRegisterButton(context)),
           ],
         ),
       ),
@@ -173,7 +200,7 @@ class _ClientMgmtScreenState extends State<ClientMgmtScreen> {
     );
   }
 
-  Widget _buildRegisterButton() {
+  Widget _buildRegisterButton(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -193,7 +220,7 @@ class _ClientMgmtScreenState extends State<ClientMgmtScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: () => _showRegisterModal(context),
           borderRadius: BorderRadius.circular(20),
           child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -256,13 +283,256 @@ class _ClientMgmtScreenState extends State<ClientMgmtScreen> {
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
           mainAxisExtent: isTablet
-              ? 300
-              : 260, // Sized to fit identification headings
+              ? 320
+              : 310, // Sized to fit identification headings
         ),
         itemBuilder: (context, index) {
           return ClientCard(client: clients[index]);
         },
       ),
+    );
+  }
+
+  void _showRegisterModal(BuildContext context) {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final addressController = TextEditingController();
+    final phoneController = TextEditingController();
+    final tinController = TextEditingController();
+    final contactController = TextEditingController();
+    String industry = "Mining & Extraction";
+    String type = "Supplier";
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bContext) => BlocProvider.value(
+        value: context.read<ClientsBloc>(),
+        child: StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(bContext).viewInsets.bottom,
+                left: 24,
+                right: 24,
+                top: 24,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1F2937),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Register New Client",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white54),
+                          onPressed: () => Navigator.pop(bContext),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Complete the onboarding process",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.5),
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildField("Company Name", nameController, Icons.business),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildField(
+                            "Email",
+                            emailController,
+                            Icons.email,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildField(
+                            "Phone",
+                            phoneController,
+                            Icons.phone,
+                          ),
+                        ),
+                      ],
+                    ),
+                    _buildField(
+                      "Address",
+                      addressController,
+                      Icons.location_on,
+                    ),
+                    _buildField(
+                      "Primary Contact",
+                      contactController,
+                      Icons.person,
+                    ),
+                    _buildField("TIN Number", tinController, Icons.fingerprint),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDropdown(
+                            "Industry",
+                            industry,
+                            [
+                              "Mining & Extraction",
+                              "Logistics & Supply Chain",
+                              "Manufacturing",
+                              "Import/Export",
+                            ],
+                            (v) => setModalState(() => industry = v!),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildDropdown("Type", type, [
+                            "Supplier",
+                            "Customer",
+                            "Both",
+                          ], (v) => setModalState(() => type = v!)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final data = {
+                            "name": nameController.text,
+                            "email": emailController.text,
+                            "address": addressController.text,
+                            "phone": phoneController.text,
+                            "tin": tinController.text,
+                            "primaryContact": contactController.text,
+                            "industry": industry,
+                            "type": type,
+                            "registrationDate": DateTime.now()
+                                .toIso8601String(),
+                            "status": "Onboarding",
+                          };
+                          context.read<ClientsBloc>().add(
+                            RegisterClient(clientData: data),
+                          );
+                          Navigator.pop(bContext);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.btnColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          "REGISTER CLIENT",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField(
+    String label,
+    TextEditingController controller,
+    IconData icon,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(
+            color: Colors.white.withOpacity(0.4),
+            fontSize: 13,
+          ),
+          prefixIcon: Icon(icon, color: AppTheme.btnColor, size: 20),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppTheme.btnColor),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown(
+    String label,
+    String value,
+    List<String> items,
+    Function(String?) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1F2937),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              items: items.map((String item) {
+                return DropdownMenuItem<String>(value: item, child: Text(item));
+              }).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -276,105 +546,157 @@ class ClientCard extends StatelessWidget {
     final bool isTablet = Responsive.isTablet(context);
     final Color accentColor = AppTheme.btnColor;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Section
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFBFBFB),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.03))),
+    return GestureDetector(
+      onLongPress: () => _showDeleteConfirmation(context),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: accentColor.withOpacity(0.1),
-                  child: Icon(Icons.business_rounded, color: accentColor, size: 20),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Section
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBFBFB),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "ENTITY NAME",
-                        style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5),
-                      ),
-                      Text(
-                        client.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: isTablet ? 16 : 14,
-                          color: const Color(0xFF1F2937),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                border: Border(
+                  bottom: BorderSide(color: Colors.black.withOpacity(0.03)),
                 ),
-                _buildTypeChip(client.type, accentColor),
-              ],
-            ),
-          ),
-          
-          // Body Section
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-              child: Column(
+              ),
+              child: Row(
                 children: [
-                  _buildDetailedInfoRow(Icons.account_circle_outlined, "Primary Contact", client.primaryContact),
-                  const SizedBox(height: 12),
-                  _buildDetailedInfoRow(Icons.fingerprint_rounded, "TIN Number", client.tin),
-                  const SizedBox(height: 12),
-                  _buildDetailedInfoRow(Icons.domain_outlined, "Industry", client.industry),
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: accentColor.withOpacity(0.1),
+                    child: Icon(
+                      Icons.business_rounded,
+                      color: accentColor,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "ENTITY NAME",
+                          style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        Text(
+                          client.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: isTablet ? 16 : 14,
+                            color: const Color(0xFF1F2937),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildTypeChip(client.type, accentColor),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => _showDeleteConfirmation(context),
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.red.withOpacity(0.7),
+                      size: 20,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
                 ],
               ),
             ),
-          ),
-          
-          // Footer Section
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+
+            // Body Section
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                child: Column(
                   children: [
-                    const Text("REG. DATE", style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(height: 2),
-                    Text(
-                      "${client.registrationDate.day}/${client.registrationDate.month}/${client.registrationDate.year}",
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF374151)),
+                    _buildDetailedInfoRow(
+                      Icons.account_circle_outlined,
+                      "Primary Contact",
+                      client.primaryContact,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailedInfoRow(
+                      Icons.fingerprint_rounded,
+                      "TIN Number",
+                      client.tin,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailedInfoRow(
+                      Icons.domain_outlined,
+                      "Industry",
+                      client.industry,
                     ),
                   ],
                 ),
-                _buildStatusBadge(client.status),
-              ],
+              ),
             ),
-          ),
-        ],
+
+            // Footer Section
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "REG. DATE",
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "${client.registrationDate.day}/${client.registrationDate.month}/${client.registrationDate.year}",
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
+                    ],
+                  ),
+                  _buildStatusBadge(client.status),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -389,7 +711,12 @@ class ClientCard extends StatelessWidget {
       ),
       child: Text(
         type.toUpperCase(),
-        style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
@@ -404,11 +731,22 @@ class ClientCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 6, height: 6, decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)),
+          Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
+          ),
           const SizedBox(width: 8),
           Text(
             status,
-            style: const TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w800),
+            style: const TextStyle(
+              color: Colors.green,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
@@ -420,7 +758,10 @@ class ClientCard extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: Icon(icon, size: 16, color: const Color(0xFF6B7280)),
         ),
         const SizedBox(width: 12),
@@ -428,11 +769,22 @@ class ClientCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
               const SizedBox(height: 1),
               Text(
                 value,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1F2937)),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937),
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -440,6 +792,48 @@ class ClientCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1F2937),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Delete Client",
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          "Are you sure you want to delete ${client.name}? This action cannot be undone.",
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dContext),
+            child: const Text(
+              "CANCEL",
+              style: TextStyle(color: Colors.white38),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<ClientsBloc>().add(
+                DeleteClient(clientId: client.id),
+              );
+              Navigator.pop(dContext);
+            },
+            child: const Text(
+              "DELETE",
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

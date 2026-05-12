@@ -4,6 +4,8 @@ import '../../domain/models/client.dart';
 
 abstract class ClientsRemoteDataSource {
   Future<List<Client>> getClients();
+  Future<void> registerClient(Map<String, dynamic> clientData);
+  Future<void> deleteClient(String id);
 }
 
 class ClientsRemoteDataSourceImpl implements ClientsRemoteDataSource {
@@ -23,6 +25,30 @@ class ClientsRemoteDataSourceImpl implements ClientsRemoteDataSource {
       }
     } on DioException catch (e) {
       throw Exception(e.message ?? "An error occurred");
+    }
+  }
+
+  @override
+  Future<void> registerClient(Map<String, dynamic> clientData) async {
+    try {
+      final response = await dio.post(ApiConstants.clients, data: clientData);
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw Exception("Failed to register client");
+      }
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['message'] ?? e.message ?? "An error occurred");
+    }
+  }
+
+  @override
+  Future<void> deleteClient(String id) async {
+    try {
+      final response = await dio.delete("${ApiConstants.clients}/$id");
+      if (response.statusCode != 200) {
+        throw Exception("Failed to delete client");
+      }
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['message'] ?? e.message ?? "An error occurred");
     }
   }
 }

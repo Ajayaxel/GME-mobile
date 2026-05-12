@@ -11,4 +11,14 @@ class TransportationRepositoryImpl implements TransportationRepository {
   Future<List<Transporter>> getTransporters() async {
     return await remoteDataSource.getTransporters();
   }
+
+  @override
+  Future<void> createTransporter(Map<String, dynamic> data) async {
+    return await remoteDataSource.createTransporter(data);
+  }
+
+  @override
+  Future<void> createTrip(Map<String, dynamic> data) async {
+    return await remoteDataSource.createTrip(data);
+  }
 }

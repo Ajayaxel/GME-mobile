@@ -23,7 +23,7 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
   final _customerController = TextEditingController();
   String _status = "Pending";
   final List<Map<String, dynamic>> _materialTypes = [
-    {"name": "", "grossWeight": 0.0, "tareWeight": 0.0, "netWeight": 0.0}
+    {"name": "", "grossWeight": 0.0, "tareWeight": 0.0, "netWeight": 0.0},
   ];
 
   late List<String> _supplierSuggestions;
@@ -32,8 +32,14 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
   @override
   void initState() {
     super.initState();
-    _supplierSuggestions = widget.existingIntakes.map((e) => e.supplierName).toSet().toList();
-    _vehicleSuggestions = widget.existingIntakes.map((e) => e.vehicleNumber).toSet().toList();
+    _supplierSuggestions = widget.existingIntakes
+        .map((e) => e.supplierName)
+        .toSet()
+        .toList();
+    _vehicleSuggestions = widget.existingIntakes
+        .map((e) => e.vehicleNumber)
+        .toSet()
+        .toList();
   }
 
   @override
@@ -46,7 +52,12 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
 
   void _addMaterial() {
     setState(() {
-      _materialTypes.add({"name": "", "grossWeight": 0.0, "tareWeight": 0.0, "netWeight": 0.0});
+      _materialTypes.add({
+        "name": "",
+        "grossWeight": 0.0,
+        "tareWeight": 0.0,
+        "netWeight": 0.0,
+      });
     });
   }
 
@@ -85,13 +96,24 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
             Expanded(
               child: ListView(
                 children: [
-                  _buildAutocompleteField(_supplierController, "Supplier Name", _supplierSuggestions),
+                  _buildAutocompleteField(
+                    _supplierController,
+                    "Supplier Name",
+                    _supplierSuggestions,
+                  ),
                   const SizedBox(height: 16),
-                  _buildAutocompleteField(_vehicleController, "Vehicle Number", _vehicleSuggestions),
+                  _buildAutocompleteField(
+                    _vehicleController,
+                    "Vehicle Number",
+                    _vehicleSuggestions,
+                  ),
                   const SizedBox(height: 16),
                   _buildTextField(_customerController, "Customer Name"),
                   const SizedBox(height: 16),
-                  const Text("Status", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  const Text(
+                    "Status",
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _status,
@@ -100,7 +122,10 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.05),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                     items: ["Pending", "Completed", "Paid"]
                         .map((s) => DropdownMenuItem(value: s, child: Text(s)))
@@ -111,17 +136,28 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Material Types", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Text(
+                        "Material Types",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       TextButton.icon(
                         onPressed: _addMaterial,
                         icon: const Icon(Icons.add, size: 18),
                         label: const Text("Add"),
-                        style: TextButton.styleFrom(foregroundColor: Colors.orangeAccent),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.orangeAccent,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
-                  ..._materialTypes.asMap().entries.map((entry) => _buildMaterialItem(entry.key, entry.value)),
+                  ..._materialTypes.asMap().entries.map(
+                    (entry) => _buildMaterialItem(entry.key, entry.value),
+                  ),
                 ],
               ),
             ),
@@ -146,7 +182,11 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
     );
   }
 
-  Widget _buildAutocompleteField(TextEditingController controller, String label, List<String> options) {
+  Widget _buildAutocompleteField(
+    TextEditingController controller,
+    String label,
+    List<String> options,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Autocomplete<String>(
@@ -155,34 +195,44 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
               return options;
             }
             return options.where((String option) {
-              return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+              return option.toLowerCase().contains(
+                textEditingValue.text.toLowerCase(),
+              );
             });
           },
           onSelected: (String selection) {
             controller.text = selection;
           },
-          fieldViewBuilder: (context, fieldController, focusNode, onFieldSubmitted) {
-            // Sync with our controller
-            if (controller.text.isNotEmpty && fieldController.text.isEmpty) {
-              fieldController.text = controller.text;
-            }
-            fieldController.addListener(() {
-              controller.text = fieldController.text;
-            });
-            return TextField(
-              controller: fieldController,
-              focusNode: focusNode,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: label,
-                labelStyle: const TextStyle(color: Colors.white54),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                suffixIcon: const Icon(Icons.arrow_drop_down, color: Colors.white38),
-              ),
-            );
-          },
+          fieldViewBuilder:
+              (context, fieldController, focusNode, onFieldSubmitted) {
+                // Sync with our controller
+                if (controller.text.isNotEmpty &&
+                    fieldController.text.isEmpty) {
+                  fieldController.text = controller.text;
+                }
+                fieldController.addListener(() {
+                  controller.text = fieldController.text;
+                });
+                return TextField(
+                  controller: fieldController,
+                  focusNode: focusNode,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: label,
+                    labelStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    suffixIcon: const Icon(
+                      Icons.arrow_drop_down,
+                      color: Colors.white38,
+                    ),
+                  ),
+                );
+              },
           optionsViewBuilder: (context, onSelected, options) {
             return Align(
               alignment: Alignment.topLeft,
@@ -202,11 +252,18 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
                     padding: EdgeInsets.zero,
                     shrinkWrap: true,
                     itemCount: options.length,
-                    separatorBuilder: (context, index) => const Divider(color: Colors.white10, height: 1),
+                    separatorBuilder: (context, index) =>
+                        const Divider(color: Colors.white10, height: 1),
                     itemBuilder: (context, index) {
                       final option = options.elementAt(index);
                       return ListTile(
-                        title: Text(option, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                        title: Text(
+                          option,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
                         onTap: () => onSelected(option),
                       );
                     },
@@ -231,7 +288,10 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
           labelStyle: const TextStyle(color: Colors.white54),
           filled: true,
           fillColor: Colors.white.withOpacity(0.05),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );
@@ -251,7 +311,10 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
           TextField(
             onChanged: (val) => material["name"] = val,
             style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(labelText: "Material Name", labelStyle: TextStyle(color: Colors.white54)),
+            decoration: const InputDecoration(
+              labelText: "Material Name",
+              labelStyle: TextStyle(color: Colors.white54),
+            ),
           ),
           Row(
             children: [
@@ -260,11 +323,15 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
                   keyboardType: TextInputType.number,
                   onChanged: (val) {
                     material["grossWeight"] = double.tryParse(val) ?? 0.0;
-                    material["netWeight"] = material["grossWeight"] - material["tareWeight"];
+                    material["netWeight"] =
+                        material["grossWeight"] - material["tareWeight"];
                     setState(() {});
                   },
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: "Gross Wt", labelStyle: TextStyle(color: Colors.white54)),
+                  decoration: const InputDecoration(
+                    labelText: "Gross Wt",
+                    labelStyle: TextStyle(color: Colors.white54),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -273,18 +340,25 @@ class _IntakeCreateSheetState extends State<IntakeCreateSheet> {
                   keyboardType: TextInputType.number,
                   onChanged: (val) {
                     material["tareWeight"] = double.tryParse(val) ?? 0.0;
-                    material["netWeight"] = material["grossWeight"] - material["tareWeight"];
+                    material["netWeight"] =
+                        material["grossWeight"] - material["tareWeight"];
                     setState(() {});
                   },
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: "Tare Wt", labelStyle: TextStyle(color: Colors.white54)),
+                  decoration: const InputDecoration(
+                    labelText: "Tare Wt",
+                    labelStyle: TextStyle(color: Colors.white54),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   "${material["netWeight"]} kg",
-                  style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.orangeAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],

@@ -8,7 +8,14 @@ class ExportRepositoryImpl implements ExportRepository {
   ExportRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<ExportRecord>> getRecords() async {
-    return await remoteDataSource.getRecords();
-  }
+  Future<List<ExportRecord>> getRecords() => remoteDataSource.getRecords();
+
+  @override
+  Future<void> createRecord(Map<String, dynamic> data) => remoteDataSource.createRecord(data);
+
+  @override
+  Future<void> uploadDocument(String id, String docKey, String filePath) => remoteDataSource.uploadDocument(id, docKey, filePath);
+
+  @override
+  Future<void> deleteDocument(String id, String docKey) => remoteDataSource.deleteDocument(id, docKey);
 }

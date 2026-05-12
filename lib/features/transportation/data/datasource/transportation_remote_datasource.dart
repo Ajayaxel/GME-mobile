@@ -4,6 +4,8 @@ import '../../domain/models/transporter.dart';
 
 abstract class TransportationRemoteDataSource {
   Future<List<Transporter>> getTransporters();
+  Future<void> createTransporter(Map<String, dynamic> data);
+  Future<void> createTrip(Map<String, dynamic> data);
 }
 
 class TransportationRemoteDataSourceImpl implements TransportationRemoteDataSource {
@@ -23,6 +25,24 @@ class TransportationRemoteDataSourceImpl implements TransportationRemoteDataSour
       }
     } on DioException catch (e) {
       throw Exception(e.message ?? "An error occurred");
+    }
+  }
+
+  @override
+  Future<void> createTransporter(Map<String, dynamic> data) async {
+    try {
+      await dio.post(ApiConstants.transporters, data: data);
+    } on DioException catch (e) {
+      throw Exception(e.message ?? "Failed to create transporter");
+    }
+  }
+
+  @override
+  Future<void> createTrip(Map<String, dynamic> data) async {
+    try {
+      await dio.post(ApiConstants.trips, data: data);
+    } on DioException catch (e) {
+      throw Exception(e.message ?? "Failed to assign trip");
     }
   }
 }

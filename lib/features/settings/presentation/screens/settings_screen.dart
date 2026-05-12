@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/services/injection_container.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../domain/models/company_settings.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
@@ -16,6 +17,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   int _selectedIndex = 0;
+  bool _showDetailOnMobile = false;
   final List<String> _sections = [
     'Company Info',
     'Lists Management',
@@ -83,113 +85,213 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
 
           final currentSettings = _editedSettings!;
+          final isTablet = Responsive.isTablet(context);
 
           return Scaffold(
             backgroundColor: Colors.transparent,
-            body: Row(
-              children: [
-                // Sidebar
-                Container(
-                  width: 250,
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
-                    border: Border(right: BorderSide(color: Colors.white.withOpacity(0.1))),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                        child: Text(
-                          "Settings",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-                        child: Text(
-                          "Configure system preferences",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      ...List.generate(_sections.length, (index) {
-                        return _buildSidebarItem(index);
-                      }),
-                    ],
-                  ),
-                ),
-
-                // Content Area
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(30),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader(),
-                        const SizedBox(height: 30),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: _buildSectionContent(context, currentSettings),
-                          ),
-                        ),
-                        if (_isModified) _buildActionButtons(context),
-                      ],
+            appBar: (!isTablet && _showDetailOnMobile)
+                ? AppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    leading: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                      onPressed: () => setState(() => _showDetailOnMobile = false),
                     ),
-                  ),
-                ),
-              ],
-            ),
+                    title: Text(
+                      _sections[_selectedIndex],
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  )
+                : null,
+            body: isTablet 
+                ? Row(
+                    children: [
+                      // Sidebar (Tablet)
+                      _buildSidebar(context),
+                      // Content Area (Tablet)
+                      Expanded(
+                        child: _buildDetailView(context, currentSettings),
+                      ),
+                    ],
+                  )
+                : _showDetailOnMobile
+                    ? _buildDetailView(context, currentSettings)
+                    : _buildMobileMenu(context),
           );
         },
       ),
     );
   }
 
-  Widget _buildSidebarItem(int index) {
-    bool isSelected = _selectedIndex == index;
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.btnColor.withOpacity(0.2) : Colors.transparent,
-          border: Border(
-            left: BorderSide(
-              color: isSelected ? AppTheme.btnColor : Colors.transparent,
-              width: 4,
+  Widget _buildSidebar(BuildContext context) {
+    return Container(
+      width: 280,
+      padding: const EdgeInsets.symmetric(vertical: 30),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.15),
+        border: Border(right: BorderSide(color: Colors.white.withOpacity(0.05))),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Settings",
+                  style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  "System Preferences",
+                  style: TextStyle(color: Colors.white38, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 40),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _sections.length,
+              itemBuilder: (context, index) => _buildSidebarItem(index),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileMenu(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 60, 24, 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Settings",
+                  style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Manage your application experience",
+                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 15),
+                ),
+              ],
             ),
           ),
         ),
-        child: Row(
-          children: [
-            Icon(
-              _getSectionIcon(index),
-              color: isSelected ? Colors.white : Colors.white.withOpacity(0.6),
-              size: 20,
-            ),
-            const SizedBox(width: 15),
-            Text(
-              _sections[index],
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white.withOpacity(0.6),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.btnColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(_getSectionIcon(index), color: AppTheme.btnColor, size: 22),
+                  ),
+                  title: Text(
+                    _sections[index],
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  subtitle: Text(
+                    _getSectionDescription(index),
+                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 14),
+                  onTap: () {
+                    setState(() {
+                      _selectedIndex = index;
+                      _showDetailOnMobile = true;
+                    });
+                  },
+                ),
               ),
+              childCount: _sections.length,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailView(BuildContext context, CompanySettings currentSettings) {
+    final isTablet = Responsive.isTablet(context);
+    
+    return Container(
+      padding: EdgeInsets.all(isTablet ? 40 : 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isTablet) ...[
+            _buildSectionHeader(),
+            const SizedBox(height: 40),
           ],
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: _buildSectionContent(context, currentSettings),
+            ),
+          ),
+          if (_isModified) _buildActionButtons(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarItem(int index) {
+    bool isSelected = _selectedIndex == index;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.btnColor.withOpacity(0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                _getSectionIcon(index),
+                color: isSelected ? AppTheme.btnColor : Colors.white.withOpacity(0.4),
+                size: 20,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                _sections[index],
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.white.withOpacity(0.6),
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -398,28 +500,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildTextField(String label, TextEditingController controller, Function(String) onChanged, {int maxLines = 1}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+            label.toUpperCase(),
+            style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           TextField(
             controller: controller,
             onChanged: onChanged,
             maxLines: maxLines,
-            style: const TextStyle(color: Colors.black),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             decoration: InputDecoration(
               filled: true,
-              fillColor: AppTheme.fieldColor,
+              fillColor: Colors.white.withOpacity(0.05),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppTheme.btnColor),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
           ),
         ],

@@ -25,3 +25,20 @@ class AssayingError extends AssayingState {
   @override
   List<Object?> get props => [message];
 }
+
+class AssayingActionLoading extends AssayingState {
+  final List<AssayingRecord> records;
+  AssayingActionLoading(this.records);
+
+  @override
+  List<Object?> get props => [records];
+}
+
+class AssayingActionSuccess extends AssayingState {
+  final String message;
+  final List<AssayingRecord> records;
+  AssayingActionSuccess(this.message, this.records);
+
+  @override
+  List<Object?> get props => [message, records];
+}

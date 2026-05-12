@@ -16,5 +16,24 @@ class DispatchBloc extends Bloc<DispatchEvent, DispatchState> {
         emit(DispatchError(message: e.toString()));
       }
     });
+
+    on<CreateDispatchRecord>((event, emit) async {
+      // Keep previous state to show loading or just show a global loading
+      try {
+        await repository.createRecord(event.record);
+        add(FetchDispatchRecords()); // Refresh list
+      } catch (e) {
+        emit(DispatchError(message: e.toString()));
+      }
+    });
+
+    on<DeleteDispatchRecord>((event, emit) async {
+      try {
+        await repository.deleteRecord(event.id);
+        add(FetchDispatchRecords()); // Refresh list
+      } catch (e) {
+        emit(DispatchError(message: e.toString()));
+      }
+    });
   }
 }

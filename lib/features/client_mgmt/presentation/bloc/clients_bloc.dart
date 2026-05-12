@@ -16,5 +16,27 @@ class ClientsBloc extends Bloc<ClientsEvent, ClientsState> {
         emit(ClientsError(message: e.toString()));
       }
     });
+
+    on<RegisterClient>((event, emit) async {
+      emit(ClientsLoading());
+      try {
+        await repository.registerClient(event.clientData);
+        emit(ClientRegistered());
+        add(FetchClients());
+      } catch (e) {
+        emit(ClientsError(message: e.toString()));
+      }
+    });
+
+    on<DeleteClient>((event, emit) async {
+      emit(ClientsLoading());
+      try {
+        await repository.deleteClient(event.clientId);
+        emit(ClientDeleted());
+        add(FetchClients());
+      } catch (e) {
+        emit(ClientsError(message: e.toString()));
+      }
+    });
   }
 }

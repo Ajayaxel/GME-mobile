@@ -11,4 +11,14 @@ class DispatchRepositoryImpl implements DispatchRepository {
   Future<List<DispatchRecord>> getRecords() async {
     return await remoteDataSource.getRecords();
   }
+
+  @override
+  Future<DispatchRecord> createRecord(Map<String, dynamic> record) async {
+    return await remoteDataSource.createRecord(record);
+  }
+
+  @override
+  Future<void> deleteRecord(String id) async {
+    return await remoteDataSource.deleteRecord(id);
+  }
 }

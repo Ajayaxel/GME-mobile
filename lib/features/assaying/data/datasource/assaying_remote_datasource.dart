@@ -4,6 +4,8 @@ import '../../domain/models/assaying_record.dart';
 
 abstract class AssayingRemoteDataSource {
   Future<List<AssayingRecord>> getRecords();
+  Future<void> createSample(Map<String, dynamic> data);
+  Future<void> deleteSample(String id);
 }
 
 class AssayingRemoteDataSourceImpl implements AssayingRemoteDataSource {
@@ -23,6 +25,24 @@ class AssayingRemoteDataSourceImpl implements AssayingRemoteDataSource {
       }
     } on DioException catch (e) {
       throw Exception(e.message ?? "An error occurred");
+    }
+  }
+
+  @override
+  Future<void> createSample(Map<String, dynamic> data) async {
+    try {
+      await dio.post(ApiConstants.assayingTesting, data: data);
+    } on DioException catch (e) {
+      throw Exception(e.message ?? "An error occurred while creating sample");
+    }
+  }
+
+  @override
+  Future<void> deleteSample(String id) async {
+    try {
+      await dio.delete("${ApiConstants.assayingTesting}/$id");
+    } on DioException catch (e) {
+      throw Exception(e.message ?? "An error occurred while deleting sample");
     }
   }
 }

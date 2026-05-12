@@ -8,6 +8,8 @@ import 'package:gme/core/services/injection_container.dart' as di;
 
 import 'package:gme/core/widgets/responsive_wrapper.dart';
 
+import 'package:gme/core/utils/navigation_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await di.init();
@@ -27,6 +29,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: NavigationService.navigatorKey,
       title: 'GME Interchange',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

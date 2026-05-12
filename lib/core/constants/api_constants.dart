@@ -1,6 +1,10 @@
 class ApiConstants {
   static const String baseUrl =
-      'https://humorous-grace-gme-new.up.railway.app/api'; // Replace with actual base URL
+      'https://humorous-grace-gme-new.up.railway.app/api';
+      // 'http://localhost:5001/api';
+
+  // Dashboard Endpoints
+  static const String dashboardStats = '/dashboard/stats';
 
   // Auth Endpoints
   static const String login = '/auth/login';
@@ -10,6 +14,9 @@ class ApiConstants {
 
   // Assaying Endpoints
   static const String assayingTesting = '/assaying-testing';
+
+  // Inspection Endpoints
+  static const String inspectionCertification = '/inspection-certification';
 
   // Warehousing Endpoints
   static const String baggingWarehouse = '/bagging-warehouse';
@@ -22,6 +29,7 @@ class ApiConstants {
 
   // Transportation Endpoints
   static const String transporters = '/transportation/transporters';
+  static const String trips = '/transportation/trips';
 
   // Financials Endpoints
   static const String invoices = '/invoices';
@@ -33,4 +41,11 @@ class ApiConstants {
   static const String companySettings = '/company-settings';
   // Yard Intake Endpoints
   static const String yardIntake = '/yard-intake';
+  // Weighbridge Endpoints
+  static const String weighbridge = '/weighbridge';
+
+  // Inventory Endpoints
+  static const String inventoryLogs = '/inventory/logs';
+  static const String inventoryTrace = '/inventory/trace';
+  static const String users = '/users';
 }

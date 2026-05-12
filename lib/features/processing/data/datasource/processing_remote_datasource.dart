@@ -4,6 +4,8 @@ import '../../domain/models/processing_batch.dart';
 
 abstract class ProcessingRemoteDataSource {
   Future<List<ProcessingBatch>> getProcessingBatches();
+  Future<void> createProcessingBatch(Map<String, dynamic> data);
+  Future<void> deleteProcessingBatch(String id);
 }
 
 class ProcessingRemoteDataSourceImpl implements ProcessingRemoteDataSource {
@@ -23,7 +25,24 @@ class ProcessingRemoteDataSourceImpl implements ProcessingRemoteDataSource {
       }
     } on DioException catch (e) {
       throw Exception(e.message ?? "An error occurred");
- 
+    }
+  }
+
+  @override
+  Future<void> createProcessingBatch(Map<String, dynamic> data) async {
+    try {
+      await dio.post(ApiConstants.crushingProcessing, data: data);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteProcessingBatch(String id) async {
+    try {
+      await dio.delete("${ApiConstants.crushingProcessing}/$id");
+    } catch (e) {
+      rethrow;
     }
   }
 }

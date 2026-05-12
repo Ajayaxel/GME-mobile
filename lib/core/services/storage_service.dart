@@ -16,4 +16,8 @@ class StorageService {
   Future<void> deleteToken() async {
     await _storage.delete(key: _tokenKey);
   }
+
+  Future<void> clearAll() async {
+    await _storage.deleteAll();
+  }
 }

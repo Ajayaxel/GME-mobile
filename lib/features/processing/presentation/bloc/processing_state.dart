@@ -29,3 +29,13 @@ class ProcessingError extends ProcessingState {
   @override
   List<Object?> get props => [message];
 }
+
+class ProcessingActionSuccess extends ProcessingState {
+  final String message;
+  const ProcessingActionSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class ProcessingActionLoading extends ProcessingState {}

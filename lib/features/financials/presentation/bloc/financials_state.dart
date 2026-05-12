@@ -25,3 +25,11 @@ class FinancialsError extends FinancialsState {
   @override
   List<Object?> get props => [message];
 }
+
+class FinancialsActionSuccess extends FinancialsState {
+  final String message;
+  FinancialsActionSuccess({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
